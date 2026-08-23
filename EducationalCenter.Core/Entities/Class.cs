@@ -1,4 +1,6 @@
-﻿namespace EducationalCenter.Core.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace EducationalCenter.Core.Entities;
 
 public class Class
 {
@@ -8,9 +10,16 @@ public class Class
     public string Schedule { get; set; } = null!;
     public int Capacity { get; set; }
     
-    public int CourseId  { get; set; }
-    public Course Course { get; set; } = null!;
+    public int CourseId { get; set; }
+    
+    [JsonIgnore]
+    public Course? Course { get; set; }
+    
     public int InstructorId { get; set; }
-    public Instructor Instructor { get; set; }
+    
+    [JsonIgnore]
+    public Instructor? Instructor { get; set; }
+    
+    [JsonIgnore]
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }
