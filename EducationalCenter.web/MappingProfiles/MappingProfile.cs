@@ -8,6 +8,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        // Existing mappings
         CreateMap<Student, StudentResponseDto>();
         CreateMap<CreateStudentRequestDto, Student>();
 
@@ -16,5 +17,17 @@ public class MappingProfile : Profile
 
         CreateMap<Class, ClassResponseDto>();
         CreateMap<CreateClassRequestDto, Class>();
+
+        // NEW: Instructor mappings
+        CreateMap<Instructor, InstructorResponseDto>();
+        CreateMap<CreateInstructorRequestDto, Instructor>();
+
+        // NEW: Payment mappings
+        CreateMap<Payment, PaymentResponseDto>();
+        CreateMap<CreatePaymentRequestDto, Payment>();
+
+        // NEW: Enrollment mappings
+        CreateMap<Enrollment, EnrollmentResponseDto>();
+        CreateMap<CreateEnrollmentRequestDto, Enrollment>();
     }
 }

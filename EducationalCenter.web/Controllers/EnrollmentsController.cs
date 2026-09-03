@@ -1,29 +1,53 @@
-﻿using EducationalCenter.Core.Interfaces;
+﻿using AutoMapper;
+using EducationalCenter.Core.Interfaces;
+using EducationalCenter.Shared.DTOs;
+using EducationalCenter.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EducationalCenter.Web.Controllers;
+namespace EducationalCenter.web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 public class EnrollmentsController : ControllerBase
 {
     private readonly IEnrollmentService _enrollmentService;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public EnrollmentsController(IEnrollmentService enrollmentService)
+    public EnrollmentsController(IEnrollmentService enrollmentService, IUnitOfWork unitOfWork, IMapper mapper)
     {
         _enrollmentService = enrollmentService;
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
-    [HttpPost("enroll")]
-    public async Task<IActionResult> EnrollStudent(int studentId, int classId)
+    // GET: api/enrollments
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<EnrollmentResponseDto>>> GetAllEnrollments(CancellationToken cancellationToken)
     {
-        var result = await _enrollmentService.EnrollStudentAsync(studentId, classId);
+        var enrollments = await _unitOfWork.Enrollments.ListAllAsync(cancellationToken);
+        var dtos = _mapper.Map<IReadOnlyList<EnrollmentResponseDto>>(enrollments);
+        
+        return Ok(dtos);
+    }
 
-        if (!result)
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterStudent([FromBody] CreateEnrollmentRequestDto request, CancellationToken cancellationToken)
+    {
+        // 1. Throw BadRequest if IDs are invalid
+        if (request.StudentId <= 0 || request.ClassId <= 0)
         {
-            return BadRequest("Cannot enroll student. Please check if the student or class exists, if the student is already enrolled, or if the class is at full capacity.");
+            throw new BadRequestException("Invalid Student ID or Class ID.");
         }
 
-        return Ok("Student enrolled successfully.");
+        var success = await _enrollmentService.EnrollStudentAsync(request.StudentId, request.ClassId, cancellationToken);
+
+        // 2. Throw Conflict if business rules (capacity/duplicates) fail
+        if (!success)
+        {
+            throw new ConflictException("Enrollment failed. The student is already registered, or the class is at full capacity.");
+        }
+
+        return Ok(new { message = "Student successfully enrolled!" });
     }
 }
