@@ -1,0 +1,61 @@
+@page
+@model EducationalCenter.web.Pages.InstructorsModel
+@{
+    ViewData["Title"] = "Instructors";
+}
+
+<h2>Instructors</h2>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var i in Model.Instructors)
+    {
+        <tr>
+            <td>@i.Id</td>
+            <td>@i.FirstName</td>
+            <td>@i.LastName</td>
+            <td>@i.Email</td>
+            <td>@i.PhoneNumber</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h4>Add New Instructor</h4>
+<form method="post">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">First Name</label>
+            <input asp-for="NewFirstName" class="form-control" required />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Last Name</label>
+            <input asp-for="NewLastName" class="form-control" required />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Email</label>
+            <input asp-for="NewEmail" type="email" class="form-control" required />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Phone</label>
+            <input asp-for="NewPhoneNumber" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Add</button>
+        </div>
+    </div>
+</form>

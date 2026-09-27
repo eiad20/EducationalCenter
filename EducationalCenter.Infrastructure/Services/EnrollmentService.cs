@@ -1,7 +1,6 @@
 ﻿using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
 using EducationalCenter.Core.Enums;
-using System.Linq;
 
 namespace EducationalCenter.Infrastructure.Services;
 

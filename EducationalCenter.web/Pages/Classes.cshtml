@@ -1,0 +1,83 @@
+@page
+@model EducationalCenter.web.Pages.ClassesModel
+@{
+    ViewData["Title"] = "Classes";
+}
+
+<h2>Classes</h2>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Course</th>
+            <th>Instructor</th>
+            <th>Schedule</th>
+            <th>Dates</th>
+            <th>Seats</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var c in Model.Classes)
+    {
+        <tr>
+            <td>@c.Id</td>
+            <td>@c.CourseName</td>
+            <td>@c.InstructorName</td>
+            <td>@c.Schedule</td>
+            <td>@c.StartDate.ToShortDateString() - @c.EndDate.ToShortDateString()</td>
+            <td class="@(c.Enrolled >= c.Capacity ? "text-danger fw-bold" : "")">
+                @c.Enrolled / @c.Capacity
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h4>Add New Class</h4>
+<form method="post">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Course</label>
+            <select asp-for="NewCourseId" class="form-select">
+                @foreach (var course in Model.Courses)
+                {
+                    <option value="@course.Id">@course.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Instructor</label>
+            <select asp-for="NewInstructorId" class="form-select">
+                @foreach (var instructor in Model.Instructors)
+                {
+                    <option value="@instructor.Id">@instructor.FirstName @instructor.LastName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Schedule</label>
+            <input asp-for="NewSchedule" class="form-control" placeholder="e.g. Sat/Tue 4-6pm" />
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Start</label>
+            <input asp-for="NewStartDate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">End</label>
+            <input asp-for="NewEndDate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Capacity</label>
+            <input asp-for="NewCapacity" type="number" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Add</button>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,38 @@
+@page
+@model EducationalCenter.web.Pages.EnrollModel
+@{
+    ViewData["Title"] = "Enroll a Student";
+}
+
+<h2>Enroll a Student</h2>
+
+@if (Model.Message != null)
+{
+    <div class="alert @(Model.IsError ? "alert-danger" : "alert-success")">@Model.Message</div>
+}
+
+<form method="post">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Student</label>
+            <select asp-for="SelectedStudentId" class="form-select">
+                @foreach (var s in Model.Students)
+                {
+                    <option value="@s.Id">@s.FirstName @s.LastName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Class</label>
+            <select asp-for="SelectedClassId" class="form-select">
+                @foreach (var c in Model.ClassOptions)
+                {
+                    <option value="@c.Id">@c.Label</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Enroll</button>
+        </div>
+    </div>
+</form>
