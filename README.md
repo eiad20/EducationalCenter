@@ -121,8 +121,7 @@ The relational database is structured to support complex queries and reporting:
    git clone https://github.com/eiad20/EducationalCenter
    cd EducationalCenter
 
-   ## 📄 License & Copyright
-
+  
 © 2026 Eiad Salama. All rights reserved.
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for full details.
