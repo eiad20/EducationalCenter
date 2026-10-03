@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -17,16 +18,19 @@ public class InstructorsModel : PageModel
     public IReadOnlyList<Instructor> Instructors { get; set; } = new List<Instructor>();
 
     [BindProperty]
+    [Required(ErrorMessage = "First name is required.")]
     public string NewFirstName { get; set; } = string.Empty;
 
     [BindProperty]
+    [Required(ErrorMessage = "Last name is required.")]
     public string NewLastName { get; set; } = string.Empty;
 
     [BindProperty]
+    [Required(ErrorMessage = "Email is required."), EmailAddress(ErrorMessage = "Invalid email format.")]
     public string NewEmail { get; set; } = string.Empty;
 
     [BindProperty]
-    public string NewPhoneNumber { get; set; } = string.Empty;
+    public string? NewPhoneNumber { get; set; }
 
     public string? SuccessMessage { get; set; }
 
@@ -37,12 +41,18 @@ public class InstructorsModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!ModelState.IsValid)
+        {
+            Instructors = await _unitOfWork.Instructors.ListAllAsync();
+            return Page();
+        }
+
         var instructor = new Instructor
         {
             FirstName = NewFirstName,
             LastName = NewLastName,
             Email = NewEmail,
-            PhoneNumber = NewPhoneNumber
+            PhoneNumber = NewPhoneNumber ?? string.Empty
         };
 
         await _unitOfWork.Instructors.AddAsync(instructor);
@@ -50,6 +60,7 @@ public class InstructorsModel : PageModel
 
         SuccessMessage = $"Instructor '{NewFirstName} {NewLastName}' was added.";
         Instructors = await _unitOfWork.Instructors.ListAllAsync();
+
         return Page();
     }
 }

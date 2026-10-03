@@ -1,6 +1,7 @@
 ﻿using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
 using EducationalCenter.Core.Enums;
+using EducationalCenter.Shared.Exceptions;
 
 namespace EducationalCenter.Infrastructure.Services;
 
@@ -15,32 +16,32 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<bool> EnrollStudentAsync(int studentId, int classId, CancellationToken cancellationToken = default)
     {
-        // 1. Access the repository via the specific property defined in IUnitOfWork
+        var student = await _unitOfWork.Students.GetByIdAsync(studentId, cancellationToken);
+        if (student == null)
+            throw new NotFoundException($"Student with ID {studentId} not found.");
+
         var targetClass = await _unitOfWork.Classes.GetByIdAsync(classId, cancellationToken);
         if (targetClass == null)
-            return false;
+            throw new NotFoundException($"Class with ID {classId} not found.");
 
-        // 2. Fetch enrollments using the available ListAllAsync method
         var allEnrollments = await _unitOfWork.Enrollments.ListAllAsync(cancellationToken);
 
-        // Rule 1: Student not already enrolled
         bool isAlreadyEnrolled = allEnrollments.Any(e => e.StudentId == studentId && e.ClassId == classId);
         if (isAlreadyEnrolled)
-            return false;
+            throw new ConflictException("Student is already enrolled in this class.");
 
-        // Rule 2: Class capacity check
-        int currentEnrollmentsCount = allEnrollments.Count(e => e.ClassId == classId);
+        int currentEnrollmentsCount = allEnrollments.Count(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active);
         if (currentEnrollmentsCount >= targetClass.Capacity)
-            return false;
+            throw new BadRequestException("The class has reached its maximum capacity.");
 
         var enrollment = new Enrollment
         {
             StudentId = studentId,
             ClassId = classId,
-            Status = EnrollmentStatus.Active
+            Status = EnrollmentStatus.Active,
+            EnrollmentDate = DateTime.UtcNow
         };
 
-        // 3. Add and save using the specific property
         await _unitOfWork.Enrollments.AddAsync(enrollment, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

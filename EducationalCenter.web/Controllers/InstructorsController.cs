@@ -54,23 +54,24 @@ public class InstructorsController : ControllerBase
         return CreatedAtAction(nameof(GetInstructorById), new { id = newInstructor.Id }, responseDto);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateInstructor(int id, CreateInstructorRequestDto request)
-    {
-        // Data Validation
-        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
-            throw new BadRequestException("Instructor first and last names cannot be empty.");
-
-        // Not Found Validation
-        var existingInstructor = await _unitOfWork.Instructors.GetByIdAsync(id)
-            ?? throw new NotFoundException($"Instructor with ID {id} was not found.");
-
-        _mapper.Map(request, existingInstructor);
-        await _unitOfWork.Instructors.UpdateAsync(existingInstructor);
-        await _unitOfWork.SaveChangesAsync();
-
-        return NoContent();
-    }
+   [HttpPut("{id}")]
+   public async Task<IActionResult> UpdateInstructor(int id, CreateInstructorRequestDto request)
+   {
+       if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+           throw new BadRequestException("Instructor first and last names cannot be empty.");
+   
+       if (string.IsNullOrWhiteSpace(request.Email))
+           throw new BadRequestException("Instructor email address is required.");
+   
+       var existingInstructor = await _unitOfWork.Instructors.GetByIdAsync(id)
+           ?? throw new NotFoundException($"Instructor with ID {id} was not found.");
+   
+       _mapper.Map(request, existingInstructor);
+       await _unitOfWork.Instructors.UpdateAsync(existingInstructor);
+       await _unitOfWork.SaveChangesAsync();
+   
+       return NoContent();
+   }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteInstructor(int id)

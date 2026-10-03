@@ -1,5 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
+using EducationalCenter.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -19,16 +21,18 @@ public class EnrollModel : PageModel
     public class ClassOption
     {
         public int Id { get; set; }
-        public string Label { get; set; } = "";
+        public string Label { get; set; } = string.Empty;
     }
 
     public List<Student> Students { get; set; } = new();
     public List<ClassOption> ClassOptions { get; set; } = new();
 
     [BindProperty]
+    [Required, Range(1, int.MaxValue, ErrorMessage = "Please select a student.")]
     public int SelectedStudentId { get; set; }
 
     [BindProperty]
+    [Required, Range(1, int.MaxValue, ErrorMessage = "Please select a class.")]
     public int SelectedClassId { get; set; }
 
     public string? Message { get; set; }
@@ -41,16 +45,36 @@ public class EnrollModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var success = await _enrollmentService.EnrollStudentAsync(SelectedStudentId, SelectedClassId);
-
-        if (success)
+        if (!ModelState.IsValid)
         {
+            await LoadAsync();
+            return Page();
+        }
+
+        try
+        {
+            await _enrollmentService.EnrollStudentAsync(SelectedStudentId, SelectedClassId);
             Message = "Student successfully enrolled!";
             IsError = false;
         }
-        else
+        catch (NotFoundException ex)
         {
-            Message = "Enrollment failed \u2014 the student is already registered for this class, or the class is at full capacity.";
+            Message = ex.Message;
+            IsError = true;
+        }
+        catch (ConflictException ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+        catch (BadRequestException ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+        catch (Exception)
+        {
+            Message = "An unexpected error occurred while enrolling the student.";
             IsError = true;
         }
 
@@ -61,7 +85,6 @@ public class EnrollModel : PageModel
     private async Task LoadAsync()
     {
         Students = (await _unitOfWork.Students.ListAllAsync()).ToList();
-
         var classes = await _unitOfWork.Classes.ListAllAsync();
         var courses = (await _unitOfWork.Courses.ListAllAsync()).ToDictionary(c => c.Id);
         var enrollments = await _unitOfWork.Enrollments.ListAllAsync();
@@ -73,7 +96,7 @@ public class EnrollModel : PageModel
             return new ClassOption
             {
                 Id = c.Id,
-                Label = $"{courseName} \u2014 {c.Schedule} ({enrolled}/{c.Capacity} seats filled)"
+                Label = $"{courseName} — {c.Schedule} ({enrolled}/{c.Capacity} seats filled)"
             };
         }).ToList();
     }

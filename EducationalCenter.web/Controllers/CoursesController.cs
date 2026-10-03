@@ -42,20 +42,17 @@ public class CoursesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CourseResponseDto>> CreateCourse(CreateCourseRequestDto request)
     {
-        // 1. Data Validation using our new exception
         if (string.IsNullOrWhiteSpace(request.Name))
             throw new BadRequestException("Course name cannot be empty.");
-            
-        if (request.Price < 0)
-            throw new BadRequestException("Course price cannot be negative.");
+                 
+        if (request.Price <= 0)
+            throw new BadRequestException("Course price must be greater than zero.");
 
         var newCourse = _mapper.Map<Course>(request);
-
         await _unitOfWork.Courses.AddAsync(newCourse);
         await _unitOfWork.SaveChangesAsync();
 
         var responseDto = _mapper.Map<CourseResponseDto>(newCourse);
-
         return CreatedAtAction(nameof(GetCourseById), new { id = newCourse.Id }, responseDto);
     }
 

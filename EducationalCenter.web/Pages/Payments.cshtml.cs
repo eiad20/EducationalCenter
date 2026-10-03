@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Enums;
 using EducationalCenter.Core.Interfaces;
@@ -20,15 +21,15 @@ public class PaymentsModel : PageModel
         public int Id { get; set; }
         public DateTime Date { get; set; }
         public decimal Amount { get; set; }
-        public string PaymentMethod { get; set; } = "";
-        public string Status { get; set; } = "";
-        public string CourseName { get; set; } = "";
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
     }
 
     public class EnrollmentOption
     {
         public int Id { get; set; }
-        public string Label { get; set; } = "";
+        public string Label { get; set; } = string.Empty;
     }
 
     public List<Student> Students { get; set; } = new();
@@ -39,12 +40,15 @@ public class PaymentsModel : PageModel
     public int? StudentId { get; set; }
 
     [BindProperty]
+    [Required, Range(1, int.MaxValue, ErrorMessage = "Please select an enrollment.")]
     public int NewEnrollmentId { get; set; }
 
     [BindProperty]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
     public decimal NewAmount { get; set; }
 
     [BindProperty]
+    [Required]
     public string NewPaymentMethod { get; set; } = "Cash";
 
     public string? SuccessMessage { get; set; }
@@ -56,12 +60,18 @@ public class PaymentsModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!ModelState.IsValid)
+        {
+            await LoadAsync();
+            return Page();
+        }
+
         var payment = new Payment
         {
             EnrollmentId = NewEnrollmentId,
             Amount = NewAmount,
             PaymentMethod = NewPaymentMethod,
-            Date = DateTime.Now,
+            Date = DateTime.UtcNow,
             Status = PaymentStatus.Completed
         };
 
@@ -85,15 +95,15 @@ public class PaymentsModel : PageModel
         {
             var studentName = studentsById.TryGetValue(e.StudentId, out var st) ? $"{st.FirstName} {st.LastName}" : "Unknown";
             var courseName = classes.TryGetValue(e.ClassId, out var cl) && courses.TryGetValue(cl.CourseId, out var cr) ? cr.Name : "Unknown";
-            return new EnrollmentOption { Id = e.Id, Label = $"{studentName} \u2014 {courseName}" };
+            return new EnrollmentOption { Id = e.Id, Label = $"{studentName} — {courseName}" };
         }).ToList();
 
         if (StudentId.HasValue)
         {
-            var payments = await _unitOfWork.Payments.ListAllAsync();
             var myEnrollmentIds = enrollments.Where(e => e.StudentId == StudentId.Value).Select(e => e.Id).ToHashSet();
+            var payments = await _unitOfWork.Payments.FindAsync(p => myEnrollmentIds.Contains(p.EnrollmentId));
 
-            Payments = payments.Where(p => myEnrollmentIds.Contains(p.EnrollmentId)).Select(p =>
+            Payments = payments.Select(p =>
             {
                 var enrollment = enrollments.First(e => e.Id == p.EnrollmentId);
                 var courseName = classes.TryGetValue(enrollment.ClassId, out var cl) && courses.TryGetValue(cl.CourseId, out var cr) ? cr.Name : "Unknown";

@@ -36,26 +36,28 @@ public class ExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        // Map the custom exceptions to HTTP status codes
         context.Response.StatusCode = exception switch
         {
-            NotFoundException => (int)HttpStatusCode.NotFound,        // 404
-            BadRequestException => (int)HttpStatusCode.BadRequest,    // 400
-            ConflictException => (int)HttpStatusCode.Conflict,        // 409
-            _ => (int)HttpStatusCode.InternalServerError              // 500
+            NotFoundException => (int)HttpStatusCode.NotFound,
+            BadRequestException => (int)HttpStatusCode.BadRequest,
+            ConflictException => (int)HttpStatusCode.Conflict,
+            _ => (int)HttpStatusCode.InternalServerError
         };
 
-        // Create the standardized JSON layout
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        var message = context.Response.StatusCode == 500 && !isDev
+            ? "An internal server error occurred."
+            : exception.Message;
+
         var response = new
         {
             StatusCode = context.Response.StatusCode,
             Error = exception.GetType().Name,
-            Message = exception.Message
+            Message = message
         };
 
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var json = JsonSerializer.Serialize(response, options);
-
         return context.Response.WriteAsync(json);
     }
 }

@@ -1,9 +1,8 @@
-﻿using System.Linq;
-using AutoMapper;
+﻿using AutoMapper;
 using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
 using EducationalCenter.Shared.DTOs;
-using EducationalCenter.Shared.Exceptions; // Added Exception using
+using EducationalCenter.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EducationalCenter.Web.Controllers;
@@ -33,7 +32,6 @@ public class ClassesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ClassResponseDto>> GetClassById(int id)
     {
-        // New Exception Pattern
         var classEntity = await _unitOfWork.Classes.GetByIdAsync(id) 
             ?? throw new NotFoundException($"Class with ID {id} was not found.");
 
@@ -44,22 +42,43 @@ public class ClassesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ClassResponseDto>> CreateClass(CreateClassRequestDto request)
     {
-        var newClass = _mapper.Map<Class>(request);
+        if (request.Capacity <= 0)
+            throw new BadRequestException("Capacity must be greater than zero.");
+    
+        if (request.EndDate <= request.StartDate)
+            throw new BadRequestException("End date must be after start date.");
 
+        _ = await _unitOfWork.Courses.GetByIdAsync(request.CourseId) 
+            ?? throw new NotFoundException($"Course with ID {request.CourseId} not found.");
+        
+        _ = await _unitOfWork.Instructors.GetByIdAsync(request.InstructorId) 
+            ?? throw new NotFoundException($"Instructor with ID {request.InstructorId} not found.");
+
+        var newClass = _mapper.Map<Class>(request);
         await _unitOfWork.Classes.AddAsync(newClass);
         await _unitOfWork.SaveChangesAsync();
 
         var responseDto = _mapper.Map<ClassResponseDto>(newClass);
-
         return CreatedAtAction(nameof(GetClassById), new { id = newClass.Id }, responseDto);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateClass(int id, CreateClassRequestDto request)
     {
-        // New Exception Pattern
+        if (request.Capacity <= 0)
+            throw new BadRequestException("Capacity must be greater than zero.");
+
+        if (request.EndDate <= request.StartDate)
+            throw new BadRequestException("End date must be after start date.");
+
         var existingClass = await _unitOfWork.Classes.GetByIdAsync(id)
             ?? throw new NotFoundException($"Class with ID {id} was not found.");
+
+        _ = await _unitOfWork.Courses.GetByIdAsync(request.CourseId)
+            ?? throw new NotFoundException($"Course with ID {request.CourseId} not found.");
+
+        _ = await _unitOfWork.Instructors.GetByIdAsync(request.InstructorId)
+            ?? throw new NotFoundException($"Instructor with ID {request.InstructorId} not found.");
 
         _mapper.Map(request, existingClass);
 
@@ -72,7 +91,6 @@ public class ClassesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteClass(int id)
     {
-        // New Exception Pattern
         var classEntity = await _unitOfWork.Classes.GetByIdAsync(id)
             ?? throw new NotFoundException($"Class with ID {id} was not found.");
 
@@ -119,18 +137,18 @@ public class ClassesController : ControllerBase
     [HttpGet("{id}/students")]
     public async Task<ActionResult<IReadOnlyList<StudentResponseDto>>> GetStudentsInClass(int id, CancellationToken cancellationToken = default)
     {
-        // New Exception Pattern
-        var classExists = await _unitOfWork.Classes.GetByIdAsync(id, cancellationToken)
+        _ = await _unitOfWork.Classes.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException($"Class with ID {id} was not found.");
 
-        var enrollments = await _unitOfWork.Enrollments.ListAllAsync(cancellationToken);
-        var enrolledStudentIds = enrollments
-            .Where(e => e.ClassId == id)
-            .Select(e => e.StudentId)
-            .ToHashSet();
+        // Query only enrollments belonging to this class
+        var enrollments = await _unitOfWork.Enrollments.FindAsync(e => e.ClassId == id, cancellationToken);
+        var enrolledStudentIds = enrollments.Select(e => e.StudentId).Distinct().ToHashSet();
 
-        var allStudents = await _unitOfWork.Students.ListAllAsync(cancellationToken);
-        var studentsInClass = allStudents.Where(s => enrolledStudentIds.Contains(s.Id)).ToList();
+        if (enrolledStudentIds.Count == 0)
+            return Ok(Array.Empty<StudentResponseDto>());
+
+        // Query only the matching students from the database
+        var studentsInClass = await _unitOfWork.Students.FindAsync(s => enrolledStudentIds.Contains(s.Id), cancellationToken);
 
         var result = _mapper.Map<IReadOnlyList<StudentResponseDto>>(studentsInClass);
         return Ok(result);

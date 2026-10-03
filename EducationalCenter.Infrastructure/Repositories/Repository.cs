@@ -1,4 +1,5 @@
-﻿using EducationalCenter.Core.Interfaces;
+﻿using System.Linq.Expressions;
+using EducationalCenter.Core.Interfaces;
 using EducationalCenter.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,8 +7,8 @@ namespace EducationalCenter.Infrastructure.Repositories;
 
 public class Repository<T> : IRepository<T> where T : class
 {
-  
     protected readonly AppDbContext _context;
+
     public Repository(AppDbContext context)
     {
         _context = context;
@@ -17,10 +18,15 @@ public class Repository<T> : IRepository<T> where T : class
     {
         return await _context.Set<T>().FindAsync(new object[] { id }, cancellationToken);
     }
-
+    
     public async Task<IReadOnlyList<T>> ListAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Set<T>().ToListAsync(cancellationToken);
+    }
+    
+    public async Task<IReadOnlyList<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<T>().Where(predicate).ToListAsync(cancellationToken);
     }
 
     public async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)

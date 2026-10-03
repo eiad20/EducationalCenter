@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using EducationalCenter.Core.Entities;
 using EducationalCenter.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,9 @@ public class ClassesModel : PageModel
     public class ClassRow
     {
         public int Id { get; set; }
-        public string CourseName { get; set; } = "";
-        public string InstructorName { get; set; } = "";
-        public string Schedule { get; set; } = "";
+        public string CourseName { get; set; } = string.Empty;
+        public string InstructorName { get; set; } = string.Empty;
+        public string Schedule { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public int Capacity { get; set; }
@@ -31,21 +32,27 @@ public class ClassesModel : PageModel
     public List<Instructor> Instructors { get; set; } = new();
 
     [BindProperty]
+    [Required, Range(1, int.MaxValue, ErrorMessage = "Please select a valid course.")]
     public int NewCourseId { get; set; }
 
     [BindProperty]
+    [Required, Range(1, int.MaxValue, ErrorMessage = "Please select a valid instructor.")]
     public int NewInstructorId { get; set; }
 
     [BindProperty]
+    [Required]
     public DateTime NewStartDate { get; set; } = DateTime.Today;
 
     [BindProperty]
+    [Required]
     public DateTime NewEndDate { get; set; } = DateTime.Today.AddMonths(1);
 
     [BindProperty]
+    [Required(ErrorMessage = "Schedule is required.")]
     public string NewSchedule { get; set; } = string.Empty;
 
     [BindProperty]
+    [Range(1, 500, ErrorMessage = "Capacity must be greater than zero.")]
     public int NewCapacity { get; set; } = 20;
 
     public string? SuccessMessage { get; set; }
@@ -57,6 +64,17 @@ public class ClassesModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (NewEndDate <= NewStartDate)
+        {
+            ModelState.AddModelError(nameof(NewEndDate), "End date must be after start date.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await LoadAsync();
+            return Page();
+        }
+
         var newClass = new Class
         {
             CourseId = NewCourseId,

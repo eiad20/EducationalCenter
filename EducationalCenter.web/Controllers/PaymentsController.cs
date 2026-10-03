@@ -4,6 +4,7 @@ using EducationalCenter.Core.Interfaces;
 using EducationalCenter.Shared.DTOs;
 using EducationalCenter.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using EducationalCenter.Core.Enums;
 
 namespace EducationalCenter.Web.Controllers;
 
@@ -39,14 +40,20 @@ public class PaymentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PaymentResponseDto>> CreatePayment(CreatePaymentRequestDto request)
     {
-        // Data Validation
         if (request.Amount <= 0)
             throw new BadRequestException("Payment amount must be greater than zero.");
-            
-        if (request.EnrollmentId <= 0)
-            throw new BadRequestException("A valid Enrollment ID is required to process a payment.");
+
+        var enrollment = await _unitOfWork.Enrollments.GetByIdAsync(request.EnrollmentId);
+        if (enrollment == null)
+            throw new NotFoundException($"Enrollment with ID {request.EnrollmentId} was not found.");
+
+        if (!Enum.TryParse<PaymentStatus>(request.Status, true, out var parsedStatus))
+            throw new BadRequestException($"Invalid status. Allowed values: Completed, Pending, Failed.");
 
         var newPayment = _mapper.Map<Payment>(request);
+        newPayment.Date = DateTime.UtcNow;
+        newPayment.Status = parsedStatus;
+
         await _unitOfWork.Payments.AddAsync(newPayment);
         await _unitOfWork.SaveChangesAsync();
 

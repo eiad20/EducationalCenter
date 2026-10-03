@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EducationalCenter.Infrastructure.Data.Configurations;
 
-public class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
+public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
-    public void Configure(EntityTypeBuilder<Enrollment> builder)
+    public void Configure(EntityTypeBuilder<Payment> builder)
     {
-        builder.HasIndex(e => new { e.StudentId, e.ClassId })
+        builder.HasIndex(p => p.EnrollmentId)
             .IsUnique();
     }
 }

@@ -28,6 +28,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddRazorPages();
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 // 4. AutoMapper (Perfectly configured to scan the Web assembly)
 builder.Services.AddAutoMapper(config => { }, typeof(Program).Assembly);
 
@@ -42,6 +44,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseAuthentication();  
 app.UseAuthorization();
 
 app.MapControllers();
